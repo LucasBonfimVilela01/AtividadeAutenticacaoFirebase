@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "906877940112",
+    "project_id": "atividadefirebasepam",
+    "storage_bucket": "atividadefirebasepam.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:906877940112:android:99fd272fc1c07b7c6e8315",
+        "android_client_info": {
+          "package_name": "com.example.atividadefirebase"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC-E7GwQN3ftVWebv7Ti7MAolQZeIGrc8Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
