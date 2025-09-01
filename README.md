@@ -1,6 +1,6 @@
 # Conectando o Firebase ao seu Projeto Android com Jetpack Compose
 
-Este guia detalha os passos para integrar o Firebase em um projeto Android que utiliza Jetpack Compose para a interface do usuário. Abordaremos a configuração inicial no console do Firebase, a adição das dependências necessárias e a estrutura básica de pastas para organizar seu código relacionado ao Firebase.
+Este guia detalha os passos para integrar o Firebase em um projeto Android.
 
 ## Sumário
 
