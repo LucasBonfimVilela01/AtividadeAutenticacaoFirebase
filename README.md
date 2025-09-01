@@ -8,7 +8,7 @@ Este guia detalha os passos para integrar o Firebase em um projeto Android.
 *   [Passo 1: Criar um Projeto no Firebase](#passo-1-criar-um-projeto-no-firebase)
 *   [Passo 2: Registrar seu App Android no Firebase](#passo-2-registrar-seu-app-android-no-firebase)
 *   [Passo 3: Adicionar o Arquivo de Configuração do Firebase](#passo-3-adicionar-o-arquivo-de-configuração-do-firebase)
-*   [Passo 4: Sincronizar o Projeto](#passo-5-sincronizar-o-projeto)
+*   [Passo 4: Sincronizar o Projeto](#passo-4-sincronizar-o-projeto)
 
 ## Pré-requisitos
 
