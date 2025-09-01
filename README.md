@@ -31,13 +31,7 @@ Após a criação do projeto Firebase, você será direcionado para a página de
 1.  Na seção "**Comece adicionando o Firebase ao seu app**", clique no ícone do Android ( **</>** ).
 2.  **Nome do pacote Android**: Insira o nome do pacote do seu aplicativo. Você pode encontrá-lo no arquivo `build.gradle` do módulo do seu app (geralmente `app/build.gradle.kts` ou `app/build.gradle`), na propriedade `applicationId`.
     *   Exemplo: `com.example.meuappcompose`
-3.  **(Opcional) Apelido do app**: Forneça um apelido para identificar este app Android específico dentro do seu projeto Firebase (ex: "Meu App Compose - Android").
-4.  **Certificado de assinatura de depuração SHA-1 (Opcional, mas recomendado para alguns serviços como Autenticação do Google Sign-In)**:
-    *   Para obter o SHA-1, no Android Studio, abra o painel "Gradle" no lado direito.
-    *   Navegue até `SeuProjeto > app > Tasks > android > signingReport`.
-    *   Clique duas vezes em `signingReport`. O SHA-1 para a variante de depuração será exibido no console "Run".
-    *   Copie o valor `SHA1` (geralmente para a variante `debugAndroidTest` ou `debug`).
-5.  Clique em "**Registrar app**".
+3.  Clique em "**Registrar app**".
 
 ## Passo 3: Adicionar o Arquivo de Configuração do Firebase
 
