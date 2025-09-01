@@ -21,11 +21,8 @@ Este guia detalha os passos para integrar o Firebase em um projeto Android.
 1.  Acesse o [Console do Firebase](https://console.firebase.google.com/).
 2.  Clique em "**Adicionar projeto**" (ou "**Criar um projeto**").
 3.  Insira um nome para o seu projeto Firebase (ex: "MeuAppComposeFirebase").
-4.  (Opcional) Edite o ID do projeto, se desejar.
-5.  Aceite os termos e clique em "**Continuar**".
-6.  (Opcional) Ative o Google Analytics para o seu projeto. Recomenda-se para obter insights sobre o uso do seu app.
-    *   Se ativado, selecione uma conta do Google Analytics existente ou crie uma nova.
-7.  Clique em "**Criar projeto**". O Firebase provisionará os recursos para o seu projeto.
+4.  Aceite os termos e clique em "**Continuar**".
+5.  Clique em "**Criar projeto**". O Firebase tera criado o seu banco.
 
 ## Passo 2: Registrar seu App Android no Firebase
 
