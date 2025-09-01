@@ -37,8 +37,8 @@ Após a criação do projeto Firebase, você será direcionado para a página de
 
 1.  Após registrar o app, o Firebase fornecerá um arquivo `google-services.json`. Clique em "**Fazer o download de google-services.json**".
 2.  No Android Studio, mude para a visualização de projeto "**Project**" (no painel esquerdo).
-3.  Mova o arquivo `google-services.json` que você baixou para o diretório `app/` do seu módulo de aplicativo Android.
-    *   O caminho completo deve ser algo como `SeuProjeto/app/google-services.json`.
+3.  Mova o arquivo `google-services.json` que você baixou pra pasta `app/` do seu módulo do Android.
+    *   O caminho completo deve ser algo tipo `SeuProjeto/app/google-services.json`.
 4.  Clique em "**Próxima**" no console do Firebase.
 
 ## Passo 4: Sincronizar o Projeto
