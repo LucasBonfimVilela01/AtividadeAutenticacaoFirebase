@@ -43,7 +43,7 @@ Após a criação do projeto Firebase, você será direcionado para a página de
 
 ## Passo 4: Sincronizar o Projeto
 
-1.  No Android Studio, clique em "**Sync Now**" na barra que aparece na parte superior após modificar os arquivos Gradle. Isso fará o download das dependências adicionadas.
+1.  No Android Studio, clique em "**Sync Now**" para sincronizar os arquivos Gradle, assim as dependências devem ter sido baixadas.
 2.  Execute seu aplicativo em um emulador ou dispositivo físico. Se tudo estiver configurado corretamente, seu app se comunicará com o Firebase. O console do Firebase pode levar alguns minutos para detectar a comunicação.
 3.  Clique em "**Continuar no console**" no console do Firebase.
 
