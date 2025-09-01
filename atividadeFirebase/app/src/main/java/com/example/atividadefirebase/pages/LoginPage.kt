@@ -37,18 +37,25 @@ import com.example.atividadefirebase.AuthViewModel
 fun LoginPage(modifier: Modifier = Modifier, navController: NavController, authViewModel: AuthViewModel) {
 
     var email by remember { mutableStateOf("") }
-
     var password by remember { mutableStateOf("") }
 
     val authState = authViewModel.authState.observeAsState()
     val context = LocalContext.current
 
     LaunchedEffect(authState.value) {
-        when(authState.value) {
-            is AuthState.Authenticated -> navController.navigate("home")
-            is AuthState.Error -> Toast.makeText(context,
-                (authState.value as AuthState.Error).message, Toast.LENGTH_SHORT).show()
-            else -> Unit
+        when (val state = authState.value) { // Use 'state' para maior clareza
+            is AuthState.Authenticated -> {
+                navController.navigate("home") {
+                    popUpTo("login") { inclusive = true } // Limpa o login da pilha de retorno
+                    launchSingleTop = true // Garante apenas uma instância da home
+                }
+            }
+            is AuthState.Error -> {
+                Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()
+                // Potencialmente redefine AuthState para Não Autenticado ou um estado Inativo após mostrar o erro
+                // authViewModel.resetAuthStateToUnauthenticated() // Você precisaria adicionar isso ao ViewModel
+            }
+            else -> Unit // Lida com Carregando, Não Autenticado (permanece na página)
         }
     }
 

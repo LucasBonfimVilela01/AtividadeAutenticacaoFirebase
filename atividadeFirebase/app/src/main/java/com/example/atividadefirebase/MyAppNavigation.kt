@@ -5,6 +5,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.atividadefirebase.pages.AccountScreen
 import com.example.atividadefirebase.pages.HomePage
 import com.example.atividadefirebase.pages.SignupPage
 import com.example.atividadefirebase.pages.LoginPage
@@ -22,6 +23,9 @@ fun MyAppNavigation(modifier: Modifier = Modifier, authViewModel: AuthViewModel)
         }
         composable("home"){
             HomePage(modifier,navController,authViewModel)
+        }
+        composable("account") {
+            AccountScreen(navController = navController, authViewModel = authViewModel)
         }
     })
 }
