@@ -1,11 +1,28 @@
 package com.example.atividadefirebase
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.MutableLiveData
+import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.UserProfileChangeRequest
+import com.google.firebase.database.database
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.ValueEventListener
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+
+
+data class Product(
+    val id: String = "",
+    val name: String = "",
+    val description: String = "",
+    val addedBy: String = "",
+    val userId: String = ""
+)
 
 class AuthViewModel : ViewModel() {
 
@@ -148,9 +165,93 @@ class AuthViewModel : ViewModel() {
             onError("Usuário não encontrado.")
         }
     }
+
+    private val database = Firebase.database.reference.child("products")
+
+    // Usando StateFlow para a lista de produtos (preferível em Compose moderno)
+    private val _products = MutableStateFlow<List<Product>>(emptyList())
+    val products: StateFlow<List<Product>> = _products
+
+    private val productsListener = object : ValueEventListener {
+        override fun onDataChange(snapshot: DataSnapshot) {
+            val productList = mutableListOf<Product>()
+            snapshot.children.forEach { productSnapshot ->
+                // Mapeia o DataSnapshot para o objeto Product
+                val product = productSnapshot.getValue(Product::class.java)?.copy(id = productSnapshot.key ?: "")
+                product?.let { productList.add(it) }
+            }
+            _products.value = productList
+        }
+
+        override fun onCancelled(error: DatabaseError) {
+            _products.value = emptyList() // Limpa em caso de erro
+        }
+    }
+
+    init {
+        fetchProducts()
+    }
+
+    private fun fetchProducts() {
+        database.addValueEventListener(productsListener)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        database.removeEventListener(productsListener)
+    }
+
+    fun addProductToDatabase(
+        productName: String,
+        productDescription: String,
+        userName: String?,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        if (productName.isBlank() || productDescription.isBlank()) {
+            Log.e("AddProduct", "Nome ou descrição do produto em branco.")
+            onError("Nome e descrição do produto não podem estar vazios.")
+            return
+        }
+
+        val userIdAuth = auth.currentUser?.uid
+        if (userIdAuth == null) {
+            Log.e("AddProduct", "Usuário não autenticado para adicionar produto.")
+            onError("Usuário não autenticado.")
+            return
+        }
+
+        val productId = database.child("products").push().key
+        val specificProductsRef = Firebase.database.reference.child("products")
+
+
+        if (productId == null) {
+            Log.e("AddProduct", "Falha ao gerar productId.")
+            onError("Não foi possível gerar um ID para o produto.")
+            return
+        }
+
+        val productData = hashMapOf(
+            "name" to productName,
+            "description" to productDescription,
+            "addedBy" to (userName ?: "Usuário Desconhecido"),
+            "userId" to userIdAuth // ID do usuário que adicionou
+        )
+
+        Log.d("AddProduct", "Tentando salvar produto no Firebase: $productId -> $productData")
+
+        specificProductsRef.child(productId).setValue(productData)
+            .addOnSuccessListener {
+                Log.i("AddProduct", "SUCESSO ao salvar produto $productId no Firebase.")
+                onSuccess()
+            }
+            .addOnFailureListener { e ->
+                Log.e("AddProduct", "FALHA ao salvar produto $productId no Firebase: ${e.message}", e)
+                onError(e.message ?: "Falha ao adicionar produto.")
+            }
+    }
 }
 
-// AuthState remains the same
 sealed class AuthState {
     object Authenticated : AuthState()
     object Unauthenticated : AuthState()

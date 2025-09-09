@@ -1,13 +1,35 @@
 package com.example.atividadefirebase.pages
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -15,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.atividadefirebase.AuthState
 import com.example.atividadefirebase.AuthViewModel
+import com.example.atividadefirebase.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -23,22 +46,24 @@ fun AccountScreen(
     authViewModel: AuthViewModel
 ) {
     val authState by authViewModel.authState.observeAsState()
-    // Obtém currentUser do ViewModel ou o observa se você adicionar um LiveData para ele
-    val currentUser = authViewModel.getCurrentUser() // Usando o novo auxiliar
+    val currentUser = authViewModel.getCurrentUser()
 
-    // Inicializa com as informações do usuário atual ou padrões se nulo (embora protegido por LaunchedEffect)
     var displayName by remember(currentUser) { mutableStateOf(currentUser?.displayName ?: "") }
     var email by remember(currentUser) { mutableStateOf(currentUser?.email ?: "") }
 
+    // Estados para o formulário de novo produto
+    var productName by remember { mutableStateOf("") }
+    var productDescription by remember { mutableStateOf("") }
+    var isLoadingAddProduct by remember { mutableStateOf(false) }
 
     var showDialog by remember { mutableStateOf(false) }
-    var dialogTitle by remember { mutableStateOf("") } // Para melhor gerenciamento de diálogo
+    var dialogTitle by remember { mutableStateOf("") }
     var dialogText by remember { mutableStateOf("") }
     var dialogConfirmAction by remember { mutableStateOf<() -> Unit>({}) }
     var showDialogDismissButton by remember { mutableStateOf(false) }
 
-    var isLoadingSave by remember { mutableStateOf(false) } // Carregamento específico para salvar
-    var isLoadingDelete by remember { mutableStateOf(false) } // Carregamento específico para excluir
+    var isLoadingSave by remember { mutableStateOf(false) }
+    var isLoadingDelete by remember { mutableStateOf(false) }
 
 
     LaunchedEffect(authState) {
@@ -51,37 +76,36 @@ fun AccountScreen(
         }
     }
 
-    // Isso lida com o caso em que o composable é carregado antes que authState seja Não autenticado,
-    // ou se currentUser se tornar nulo devido a alguma outra condição de corrida.
     if (currentUser == null) {
         Column(
-            modifier = Modifier.fillMaxSize().padding(16.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text("Usuário não autenticado. Redirecionando...")
-            // O LaunchedEffect acima deve lidar com a navegação.
-            // Você pode adicionar um CircularProgressIndicator aqui se quiser.
         }
-        return // Para de renderizar o resto da UI se não houver usuário
+        return
     }
 
-    // Atualiza o estado local se currentUser mudar (por exemplo, após a atualização do perfil e nova busca)
-    // Isso é importante se o AuthViewModel não acionar diretamente uma recomposição desta tela
-    // com novos dados do usuário.
     LaunchedEffect(currentUser?.displayName, currentUser?.email) {
         displayName = currentUser?.displayName ?: ""
         email = currentUser?.email ?: ""
     }
 
+    // Adicionar um ScrollState para permitir rolagem se o conteúdo exceder a tela
+    val scrollState = rememberScrollState()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(16.dp)
+            .verticalScroll(scrollState), // Adicionar rolagem vertical
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        // verticalArrangement = Arrangement.Center // Remover para permitir que o conteúdo comece do topo
     ) {
+        // Seção de Informações da Conta
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -92,11 +116,10 @@ fun AccountScreen(
             Icon(
                 imageVector = Icons.Filled.AccountCircle,
                 contentDescription = "Ícone do Perfil",
-                modifier = Modifier.size(36.dp) // Ajuste o tamanho conforme necessário
+                modifier = Modifier.size(36.dp)
             )
         }
         Spacer(modifier = Modifier.height(16.dp))
-
 
         OutlinedTextField(
             value = displayName,
@@ -108,11 +131,11 @@ fun AccountScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         OutlinedTextField(
-            value = email, // Email é normalmente de auth.currentUser.email
-            onValueChange = { /* Geralmente não é alterado aqui sem verificação */ },
+            value = email,
+            onValueChange = { /* Não editável */ },
             label = { Text("Email") },
             modifier = Modifier.fillMaxWidth(),
-            readOnly = true, // As atualizações de email geralmente exigem um fluxo de verificação separado
+            readOnly = true,
             singleLine = true
         )
         Spacer(modifier = Modifier.height(16.dp))
@@ -120,13 +143,11 @@ fun AccountScreen(
         Button(
             onClick = {
                 isLoadingSave = true
-                authViewModel.updateUserProfile( // Use a função ViewModel
+                authViewModel.updateUserProfile(
                     newDisplayName = displayName,
                     onSuccess = {
                         isLoadingSave = false
-                        // Opcionalmente, atualize os detalhes do currentUser se não forem atualizados automaticamente
-                        // authViewModel.refreshCurrentUser() // Você pode precisar de tal função
-                        dialogTitle = "Sucesso" // Traduzido
+                        dialogTitle = "Sucesso"
                         dialogText = "Perfil atualizado com sucesso!"
                         showDialogDismissButton = false
                         dialogConfirmAction = { showDialog = false }
@@ -134,7 +155,7 @@ fun AccountScreen(
                     },
                     onError = { errorMsg ->
                         isLoadingSave = false
-                        dialogTitle = "Erro" // Traduzido
+                        dialogTitle = "Erro"
                         dialogText = "Falha ao atualizar o perfil: $errorMsg"
                         showDialogDismissButton = false
                         dialogConfirmAction = { showDialog = false }
@@ -143,7 +164,7 @@ fun AccountScreen(
                 )
             },
             modifier = Modifier.fillMaxWidth(),
-            enabled = !isLoadingSave && !isLoadingDelete
+            enabled = !isLoadingSave && !isLoadingDelete && !isLoadingAddProduct
         ) {
             if (isLoadingSave) {
                 CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
@@ -151,46 +172,114 @@ fun AccountScreen(
                 Text("Salvar alterações")
             }
         }
+        Spacer(modifier = Modifier.height(24.dp)) // Aumentar o espaço antes da próxima seção
+
+        // --- Seção de Cadastro de Novo Produto ---
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text("Cadastrar Novo Produto", style = MaterialTheme.typography.headlineSmall)
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+
+        OutlinedTextField(
+            value = productName,
+            onValueChange = { productName = it },
+            label = { Text("Nome produto") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
+        )
         Spacer(modifier = Modifier.height(8.dp))
 
+        OutlinedTextField(
+            value = productDescription,
+            onValueChange = { productDescription = it },
+            label = { Text("Descrição produto") },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(
+            onClick = {
+                isLoadingAddProduct = true
+                // Usar o displayName atualizado do estado, ou o do currentUser se preferir
+                val currentUserName = displayName.ifBlank { currentUser?.displayName }
+
+                authViewModel.addProductToDatabase(
+                    productName = productName,
+                    productDescription = productDescription,
+                    userName = currentUserName, // Passa o nome de exibição do usuário
+                    onSuccess = {
+                        isLoadingAddProduct = false
+                        productName = "" // Limpar campos
+                        productDescription = ""
+                        dialogTitle = "Sucesso"
+                        dialogText = "Produto adicionado com sucesso!"
+                        showDialogDismissButton = false
+                        dialogConfirmAction = { showDialog = false }
+                        showDialog = true
+                    },
+                    onError = { errorMsg ->
+                        isLoadingAddProduct = false
+                        dialogTitle = "Erro ao Adicionar Produto"
+                        dialogText = errorMsg
+                        showDialogDismissButton = false
+                        dialogConfirmAction = { showDialog = false }
+                        showDialog = true
+                    }
+                )
+            },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !isLoadingSave && !isLoadingDelete && !isLoadingAddProduct && productName.isNotBlank() && productDescription.isNotBlank()
+        ) {
+            if (isLoadingAddProduct) {
+                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
+            } else {
+                Text("Adicionar produto")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp)) // Aumentar o espaço
+
+        //Botões de Sair e Excluir Conta
         Button(
             onClick = { authViewModel.signout() },
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
+            enabled = !isLoadingSave && !isLoadingDelete && !isLoadingAddProduct
         ) {
             Text("Sair")
         }
-
-        Spacer(modifier = Modifier.height(8.dp)) // Reduced space for better grouping
-
+        Spacer(modifier = Modifier.height(8.dp))
         Button(
             onClick = {
                 dialogTitle = "Confirmar exclusão"
                 dialogText = "Tem certeza de que deseja excluir sua conta? Esta ação não pode ser desfeita."
                 showDialogDismissButton = true
                 dialogConfirmAction = {
-                    showDialog = false // Fecha o diálogo de confirmação
+                    showDialog = false
                     isLoadingDelete = true
                     authViewModel.deleteAccount(
                         onSuccess = {
                             isLoadingDelete = false
-                            // A navegação é tratada pelo LaunchedEffect observando authState
                         },
                         onError = { errorMsg ->
                             isLoadingDelete = false
                             dialogTitle = "Falha na exclusão"
                             dialogText = "Falha ao excluir a conta: $errorMsg"
                             showDialogDismissButton = false
-                            dialogConfirmAction = { showDialog = false } // Ação para diálogo de erro
-                            showDialog = true // Mostra diálogo de erro
+                            dialogConfirmAction = { showDialog = false }
+                            showDialog = true
                         }
                     )
                 }
-                showDialog = true // Mostra diálogo de confirmação
+                showDialog = true
             },
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
             modifier = Modifier.fillMaxWidth(),
-            enabled = !isLoadingSave && !isLoadingDelete
+            enabled = !isLoadingSave && !isLoadingDelete && !isLoadingAddProduct
         ) {
             if (isLoadingDelete) {
                 CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
@@ -202,13 +291,13 @@ fun AccountScreen(
 
     if (showDialog) {
         AlertDialog(
-            onDismissRequest = { if (!isLoadingSave && !isLoadingDelete) showDialog = false }, // Impede o fechamento durante o carregamento
+            onDismissRequest = { if (!isLoadingSave && !isLoadingDelete && !isLoadingAddProduct) showDialog = false },
             title = { Text(dialogTitle) },
             text = { Text(dialogText) },
             confirmButton = {
                 Button(
                     onClick = dialogConfirmAction,
-                    enabled = !isLoadingSave && !isLoadingDelete
+                    enabled = !isLoadingSave && !isLoadingDelete && !isLoadingAddProduct
                 ) {
                     Text(if (dialogTitle == "Confirmar exclusão") "Excluir" else "OK")
                 }
@@ -217,7 +306,7 @@ fun AccountScreen(
                 if (showDialogDismissButton) {
                     TextButton(
                         onClick = { showDialog = false },
-                        enabled = !isLoadingSave && !isLoadingDelete
+                        enabled = !isLoadingSave && !isLoadingDelete && !isLoadingAddProduct
                     ) {
                         Text("Cancelar")
                     }
