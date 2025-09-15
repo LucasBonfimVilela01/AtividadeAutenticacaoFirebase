@@ -1,13 +1,10 @@
 package com.example.atividadefirebase
 
 import android.util.Log
-import androidx.compose.foundation.layout.size
-import androidx.compose.ui.input.key.key
-import androidx.core.view.children
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.viewModelScope // Import viewModelScope
+import androidx.lifecycle.viewModelScope
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -18,7 +15,7 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ValueEventListener
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch // Import launch
+import kotlinx.coroutines.launch
 
 data class Product(
     val id: String = "",
@@ -38,8 +35,6 @@ class AuthViewModel : ViewModel() {
     private val _isUpdatingProfile = MutableLiveData<Boolean>(false)
     val isUpdatingProfile: LiveData<Boolean> = _isUpdatingProfile
 
-    // --- Database Reference for Products ---
-    // Moved here for clarity and to avoid re-declaration
     private val productsDatabaseRef = Firebase.database.reference.child("products")
 
     private val _products = MutableStateFlow<List<Product>>(emptyList())
@@ -58,13 +53,13 @@ class AuthViewModel : ViewModel() {
 
         override fun onCancelled(error: DatabaseError) {
             Log.e("AuthViewModel", "Error fetching products: ${error.message}", error.toException())
-            _products.value = emptyList() // Clear on error
+            _products.value = emptyList()
         }
     }
 
     init {
         checkAuthStatus()
-        fetchProducts() // Initial fetch when ViewModel is created
+        fetchProducts()
     }
 
     private fun checkAuthStatus() {
