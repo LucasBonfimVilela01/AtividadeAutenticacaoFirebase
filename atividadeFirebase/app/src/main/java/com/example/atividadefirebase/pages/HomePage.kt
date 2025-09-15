@@ -38,8 +38,12 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -53,12 +57,7 @@ fun HomePage(modifier: Modifier = Modifier, navController: NavHostController, au
     val authState = authViewModel.authState.observeAsState()
     val currentUser: FirebaseUser? = authViewModel.getCurrentUser()
 
-
-    // Observar a lista de produtos do ViewModel
-    // Se estiver usando StateFlow:
     val productsList by authViewModel.products.collectAsState()
-    // Se estiver usando LiveData:
-    // val productsList = authViewModel.productsLiveData.observeAsState(initial = emptyList()).value
 
 
     LaunchedEffect(authState.value) {
@@ -156,6 +155,28 @@ fun HomePage(modifier: Modifier = Modifier, navController: NavHostController, au
             }
             Spacer(modifier = Modifier.height(16.dp)) // Espaço antes da lista de produtos
 
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Produtos",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.DarkGray
+                )
+                IconButton(onClick = { authViewModel.refreshProducts() }) {
+                    Icon(
+                        Icons.Filled.Refresh,
+                        contentDescription = "Atualizar produtos",
+                        tint = Color.DarkGray
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp)) // Espaço antes da lista de produtos
             // --- Lista de Produtos ---
             if (productsList.isEmpty() && authState.value is AuthState.Authenticated) {
                 Text(

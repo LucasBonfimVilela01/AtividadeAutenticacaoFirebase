@@ -1,9 +1,13 @@
 package com.example.atividadefirebase
 
 import android.util.Log
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.input.key.key
+import androidx.core.view.children
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.viewModelScope // Import viewModelScope
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -14,7 +18,7 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ValueEventListener
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-
+import kotlinx.coroutines.launch // Import launch
 
 data class Product(
     val id: String = "",
@@ -34,11 +38,36 @@ class AuthViewModel : ViewModel() {
     private val _isUpdatingProfile = MutableLiveData<Boolean>(false)
     val isUpdatingProfile: LiveData<Boolean> = _isUpdatingProfile
 
-    init {
-        checkAuthStatus()
+    // --- Database Reference for Products ---
+    // Moved here for clarity and to avoid re-declaration
+    private val productsDatabaseRef = Firebase.database.reference.child("products")
+
+    private val _products = MutableStateFlow<List<Product>>(emptyList())
+    val products: StateFlow<List<Product>> = _products
+
+    private val productsListener = object : ValueEventListener {
+        override fun onDataChange(snapshot: DataSnapshot) {
+            val productList = mutableListOf<Product>()
+            snapshot.children.forEach { productSnapshot ->
+                val product = productSnapshot.getValue(Product::class.java)?.copy(id = productSnapshot.key ?: "")
+                product?.let { productList.add(it) }
+            }
+            _products.value = productList
+            Log.d("AuthViewModel", "Products updated: ${productList.size} items")
+        }
+
+        override fun onCancelled(error: DatabaseError) {
+            Log.e("AuthViewModel", "Error fetching products: ${error.message}", error.toException())
+            _products.value = emptyList() // Clear on error
+        }
     }
 
-    private fun checkAuthStatus() { // Tornou-se privado, pois é um auxiliar interno
+    init {
+        checkAuthStatus()
+        fetchProducts() // Initial fetch when ViewModel is created
+    }
+
+    private fun checkAuthStatus() {
         if (auth.currentUser != null) {
             _authState.value = AuthState.Authenticated
         } else {
@@ -47,9 +76,9 @@ class AuthViewModel : ViewModel() {
     }
 
     fun login(email: String, password: String) {
-        if (email.isBlank() || password.isBlank()) { // Use isBlank para melhor validação
+        if (email.isBlank() || password.isBlank()) {
             _authState.value = AuthState.Error("O email ou a senha não podem estar vazios")
-            return // Retorne mais cedo
+            return
         }
         _authState.value = AuthState.Loading
         auth.signInWithEmailAndPassword(email, password)
@@ -63,17 +92,15 @@ class AuthViewModel : ViewModel() {
             }
     }
 
-    // Função de inscrição atualizada
     fun signup(displayName: String, email: String, password: String) {
         if (displayName.isBlank() || email.isBlank() || password.isBlank()) {
             _authState.value = AuthState.Error("Todos os campos devem ser preenchidos")
-            return // Retorne mais cedo
+            return
         }
         _authState.value = AuthState.Loading
         auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    // Usuário criado, agora atualize o nome de exibição dele
                     val user = auth.currentUser
                     val profileUpdates = UserProfileChangeRequest.Builder()
                         .setDisplayName(displayName)
@@ -84,13 +111,9 @@ class AuthViewModel : ViewModel() {
                             if (profileTask.isSuccessful) {
                                 _authState.value = AuthState.Authenticated
                             } else {
-                                // Profile update failed, but account was created.
-                                // You might want to inform the user or log this.
                                 _authState.value = AuthState.Error(
                                     profileTask.exception?.message ?: "Conta criada, mas falha ao definir o nome de exibição."
                                 )
-                                // Opcionalmente, ainda trate como Autenticado se o nome de exibição não for crítico para o login imediato
-                                // _authState.value = AuthState.Autenticado
                             }
                         }
                 } else {
@@ -105,10 +128,9 @@ class AuthViewModel : ViewModel() {
         _authState.value = AuthState.Unauthenticated
     }
 
-    fun getCurrentUser(): FirebaseUser? { // Auxiliar para obter o usuário atual, se necessário em outro lugar
+    fun getCurrentUser(): FirebaseUser? {
         return auth.currentUser
     }
-
 
     fun updateUserProfile(
         newDisplayName: String,
@@ -126,9 +148,6 @@ class AuthViewModel : ViewModel() {
                 .addOnCompleteListener { task ->
                     _isUpdatingProfile.value = false
                     if (task.isSuccessful) {
-                        // Atualize o authState local, se necessário, ou deixe a UI buscar/recompor
-                        // Por exemplo, se você armazena detalhes do usuário no authState:
-                        // _authState.value = AuthState.Autenticado // (ou um estado mais específico com informações atualizadas do usuário)
                         onSuccess()
                     } else {
                         onError(task.exception?.message ?: "Falha ao atualizar o nome de exibição.")
@@ -139,7 +158,6 @@ class AuthViewModel : ViewModel() {
             onError("Usuário não encontrado.")
         }
     }
-
 
     fun deleteAccount(onSuccess: () -> Unit, onError: (String) -> Unit) {
         _authState.value = AuthState.Loading
@@ -166,39 +184,25 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    private val database = Firebase.database.reference.child("products")
-
-    // Usando StateFlow para a lista de produtos (preferível em Compose moderno)
-    private val _products = MutableStateFlow<List<Product>>(emptyList())
-    val products: StateFlow<List<Product>> = _products
-
-    private val productsListener = object : ValueEventListener {
-        override fun onDataChange(snapshot: DataSnapshot) {
-            val productList = mutableListOf<Product>()
-            snapshot.children.forEach { productSnapshot ->
-                // Mapeia o DataSnapshot para o objeto Product
-                val product = productSnapshot.getValue(Product::class.java)?.copy(id = productSnapshot.key ?: "")
-                product?.let { productList.add(it) }
-            }
-            _products.value = productList
-        }
-
-        override fun onCancelled(error: DatabaseError) {
-            _products.value = emptyList() // Limpa em caso de erro
-        }
-    }
-
-    init {
-        fetchProducts()
-    }
-
     private fun fetchProducts() {
-        database.addValueEventListener(productsListener)
+        productsDatabaseRef.removeEventListener(productsListener)
+        productsDatabaseRef.addValueEventListener(productsListener)
+        Log.d("AuthViewModel", "fetchProducts called, listener attached.")
+    }
+
+    fun refreshProducts() {
+        viewModelScope.launch {
+            Log.d("AuthViewModel", "refreshProducts() na UI.")
+            productsDatabaseRef.removeEventListener(productsListener)
+            productsDatabaseRef.addValueEventListener(productsListener)
+             Log.d("AuthViewModel", "ValueEventListener re-attached/ensured for products.")
+        }
     }
 
     override fun onCleared() {
         super.onCleared()
-        database.removeEventListener(productsListener)
+        productsDatabaseRef.removeEventListener(productsListener)
+        Log.d("AuthViewModel", "onCleared called, listener removed.")
     }
 
     fun addProductToDatabase(
@@ -221,9 +225,7 @@ class AuthViewModel : ViewModel() {
             return
         }
 
-        val productId = database.child("products").push().key
-        val specificProductsRef = Firebase.database.reference.child("products")
-
+        val productId = productsDatabaseRef.push().key
 
         if (productId == null) {
             Log.e("AddProduct", "Falha ao gerar productId.")
@@ -235,12 +237,12 @@ class AuthViewModel : ViewModel() {
             "name" to productName,
             "description" to productDescription,
             "addedBy" to (userName ?: "Usuário Desconhecido"),
-            "userId" to userIdAuth // ID do usuário que adicionou
+            "userId" to userIdAuth
         )
 
         Log.d("AddProduct", "Tentando salvar produto no Firebase: $productId -> $productData")
 
-        specificProductsRef.child(productId).setValue(productData)
+        productsDatabaseRef.child(productId).setValue(productData)
             .addOnSuccessListener {
                 Log.i("AddProduct", "SUCESSO ao salvar produto $productId no Firebase.")
                 onSuccess()
